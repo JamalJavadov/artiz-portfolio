@@ -150,6 +150,8 @@ export function App() {
     const video = videoRef.current;
     if (!video) return undefined;
 
+    setProgress(0);
+
     const updateProgress = () => {
       if (!video.duration) return;
       setProgress((video.currentTime / video.duration) * 100);
@@ -220,7 +222,7 @@ export function App() {
 
         <div className="hero-stage" aria-label="ARTIZ showreel">
           <figure className="hero-poster hero-poster-left" aria-hidden="true">
-            <img src="/assets/gallery-2.png" alt="" />
+            <img src="/assets/gallery-2.png" alt="" decoding="async" />
           </figure>
           <div className="stage-glass">
             <VideoPanel
@@ -243,7 +245,7 @@ export function App() {
             <p>{activeWork.description}</p>
           </article>
           <figure className="hero-poster hero-poster-right" aria-hidden="true">
-            <img src="/assets/gallery-6.png" alt="" />
+            <img src="/assets/gallery-6.png" alt="" decoding="async" />
           </figure>
         </div>
 
@@ -273,7 +275,12 @@ export function App() {
               type="button"
               onClick={() => setActiveId(work.id)}
             >
-              <img src={work.thumb} alt={`${work.shortTitle} video still`} />
+              <img
+                src={work.thumb}
+                alt={`${work.shortTitle} video still`}
+                loading="lazy"
+                decoding="async"
+              />
               <span className="play-badge">
                 <Play size={24} fill="currentColor" />
               </span>
@@ -303,7 +310,7 @@ export function App() {
               key={item.src}
               style={{ "--item-index": index }}
             >
-              <img src={item.src} alt={item.title} />
+              <img src={item.src} alt={item.title} loading="lazy" decoding="async" />
               <div>
                 <strong>{item.title}</strong>
                 <span>{item.caption}</span>
@@ -328,7 +335,7 @@ export function App() {
                 style={{ "--item-index": index }}
               >
                 <div className="service-visual">
-                  <img src={service.image} alt="" />
+                  <img src={service.image} alt="" loading="lazy" decoding="async" />
                   <span>{service.index}</span>
                 </div>
                 <div>
@@ -366,10 +373,20 @@ export function App() {
         </div>
         <div className="profile-preview assemble-right" aria-label="Instagram portfolio preview">
           <div className="contact-poster contact-poster-back">
-            <img src="/assets/gallery-4.png" alt="ARTIZ campaign visual" />
+            <img
+              src="/assets/gallery-4.png"
+              alt="ARTIZ campaign visual"
+              loading="lazy"
+              decoding="async"
+            />
           </div>
           <div className="contact-poster contact-poster-front">
-            <img src="/assets/gallery-6.png" alt="ARTIZ brand texture" />
+            <img
+              src="/assets/gallery-6.png"
+              alt="ARTIZ brand texture"
+              loading="lazy"
+              decoding="async"
+            />
             <div className="contact-glass-note">
               <img src="/assets/artiz-logo-mark.png" alt="" />
               <div>
@@ -436,6 +453,8 @@ function VideoPanel({ activeWork, isPlaying, setIsPlaying, progress, videoRef })
         key={activeWork.id}
         src={activeWork.video}
         poster={activeWork.thumb}
+        preload="auto"
+        autoPlay={isPlaying}
         muted
         loop
         playsInline
@@ -477,7 +496,7 @@ function ThumbRail({ activeId, setActiveId }) {
           onClick={() => setActiveId(work.id)}
           aria-label={`${work.shortTitle} seç`}
         >
-          <img src={work.thumb} alt="" />
+          <img src={work.thumb} alt="" decoding="async" />
         </button>
       ))}
     </div>
