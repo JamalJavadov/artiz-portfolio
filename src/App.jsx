@@ -10,7 +10,10 @@ import {
   Play,
   Send,
   Sparkles,
+  X,
 } from "lucide-react";
+
+const brandMark = "/assets/artiz-logo-mark-small.png";
 
 const works = [
   {
@@ -25,7 +28,9 @@ const works = [
     tools: "Blender / CapCut",
     thumb: "/assets/work-lamp.jpg",
     video: "/media/lamp.mp4",
-    duration: "00:15",
+    duration: "00:17",
+    width: 1080,
+    height: 1920,
   },
   {
     id: "keyboard",
@@ -39,7 +44,9 @@ const works = [
     tools: "3D scene / Edit",
     thumb: "/assets/work-keyboard.jpg",
     video: "/media/keyboard.mp4",
-    duration: "00:12",
+    duration: "00:35",
+    width: 1080,
+    height: 1920,
   },
   {
     id: "kraft",
@@ -53,7 +60,9 @@ const works = [
     tools: "Product render",
     thumb: "/assets/work-kraft.jpg",
     video: "/media/kraft.mp4",
-    duration: "00:14",
+    duration: "00:26",
+    width: 1080,
+    height: 1920,
   },
   {
     id: "coffee",
@@ -63,32 +72,44 @@ const works = [
     category: "Reels Content",
     description: "Kafe brendi üçün isti, premium məhsul təqdimatı",
     client: "Cafe promo",
-    format: "9:16 Vertical cut",
+    format: "16:9 Wide cut",
     tools: "Edit / Color / Motion",
     thumb: "/assets/work-coffee.jpg",
     video: "/media/coffee.mp4",
     duration: "00:20",
+    width: 1280,
+    height: 720,
   },
 ];
+
+const worksWithAspect = works.map((work) => {
+  const aspectValue = work.width / work.height;
+  return {
+    ...work,
+    aspectValue,
+    aspectRatio: `${work.width} / ${work.height}`,
+    orientation: aspectValue > 1 ? "landscape" : "portrait",
+  };
+});
 
 const services = [
   {
     icon: Box,
-    image: "/assets/gallery-2.png",
+    image: "/assets/gallery-2.jpg",
     index: "01",
     title: "3D Product Animation",
     body: "Məhsulu səhnə, kamera və hərəkətlə daha diqqətçəkən formada təqdim edirəm.",
   },
   {
     icon: Sparkles,
-    image: "/assets/gallery-3.png",
+    image: "/assets/gallery-3.jpg",
     index: "02",
     title: "Logo Animation",
     body: "Logo üçün qısa intro, reveal və sosial media açılış animasiyaları hazırlayıram.",
   },
   {
     icon: Clapperboard,
-    image: "/assets/gallery-5.png",
+    image: "/assets/gallery-5.jpg",
     index: "03",
     title: "Reels & Motion",
     body: "Instagram və TikTok üçün 9:16 formatda sürətli, aydın reklam cut-ları.",
@@ -97,32 +118,32 @@ const services = [
 
 const galleryImages = [
   {
-    src: "/assets/gallery-1.png",
+    src: "/assets/gallery-1.jpg",
     title: "Soft product frame",
     caption: "Sakit fon, premium məhsul təqdimatı",
   },
   {
-    src: "/assets/gallery-2.png",
+    src: "/assets/gallery-2.jpg",
     title: "Clean studio render",
     caption: "Reels üçün vertikal kompozisiya",
   },
   {
-    src: "/assets/gallery-3.png",
+    src: "/assets/gallery-3.jpg",
     title: "Motion still",
     caption: "Animasiya öncəsi art direction",
   },
   {
-    src: "/assets/gallery-4.png",
+    src: "/assets/gallery-4.jpg",
     title: "Minimal scene",
     caption: "Apple-style işıq və material",
   },
   {
-    src: "/assets/gallery-5.png",
+    src: "/assets/gallery-5.jpg",
     title: "Campaign visual",
     caption: "Sosial media üçün key visual",
   },
   {
-    src: "/assets/gallery-6.png",
+    src: "/assets/gallery-6.jpg",
     title: "Brand texture",
     caption: "Logo motion üçün atmosfer",
   },
@@ -130,15 +151,28 @@ const galleryImages = [
 
 export function App() {
   const [theme, setTheme] = useState("light");
-  const [activeId, setActiveId] = useState("lamp");
+  const [activeId, setActiveId] = useState("coffee");
   const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [viewerWork, setViewerWork] = useState(null);
   const videoRef = useRef(null);
+  const preloadAssets = useMemo(
+    () => [
+      brandMark,
+      "/assets/artiz-logo-white-bg.jpg",
+      ...worksWithAspect.flatMap((work) => [work.thumb, work.video]),
+      ...galleryImages.map((image) => image.src),
+    ],
+    [],
+  );
+  const { isLoaded, progress: loadProgress } = useAssetPreloader(preloadAssets);
 
   useScrollScenes();
 
   const activeWork = useMemo(
-    () => works.find((work) => work.id === activeId) ?? works[0],
+    () => worksWithAspect.find((work) => work.id === activeId) ?? worksWithAspect[0],
     [activeId],
   );
 
@@ -151,14 +185,27 @@ export function App() {
     if (!video) return undefined;
 
     setProgress(0);
+    setCurrentTime(0);
+    setDuration(0);
 
     const updateProgress = () => {
       if (!video.duration) return;
+      setCurrentTime(video.currentTime);
+      setDuration(video.duration);
       setProgress((video.currentTime / video.duration) * 100);
     };
 
+    const updateDuration = () => {
+      if (!video.duration) return;
+      setDuration(video.duration);
+    };
+
     video.addEventListener("timeupdate", updateProgress);
-    return () => video.removeEventListener("timeupdate", updateProgress);
+    video.addEventListener("loadedmetadata", updateDuration);
+    return () => {
+      video.removeEventListener("timeupdate", updateProgress);
+      video.removeEventListener("loadedmetadata", updateDuration);
+    };
   }, [activeWork]);
 
   useEffect(() => {
@@ -173,17 +220,21 @@ export function App() {
   }, [activeWork, isPlaying]);
 
   return (
-    <main className="site-shell">
+    <>
+      {!isLoaded ? <SiteLoader progress={loadProgress} /> : null}
+      <main
+        className={`site-shell ${isLoaded ? "is-site-ready" : "is-site-loading"}`}
+        aria-hidden={!isLoaded ? "true" : undefined}
+      >
       <Header theme={theme} setTheme={setTheme} />
 
       <section className="hero" id="top" data-scroll-scene>
         <div className="hero-copy">
           <div className="hero-status">
             <span>ARTIZ.AZ</span>
-            <span>Freelance motion studio</span>
+            <span>Motion studio</span>
             <span>Baku / Remote</span>
           </div>
-          <p className="section-kicker">3D Motion Designer</p>
           <h1 data-title="3D motion reklamları və sosial video kontent">
             3D motion reklamları və sosial video kontent.
           </h1>
@@ -207,29 +258,31 @@ export function App() {
           <div className="stats" aria-label="Portfolio stats">
             <span>
               <strong>9:16</strong>
-              Reels formatı
+              Reels
             </span>
             <span>
-              <strong>15s</strong>
-              Orta reklam cut
+              <strong>16:9</strong>
+              Reklam
             </span>
             <span>
               <strong>3D</strong>
-              Product scene
+              Product
             </span>
           </div>
         </div>
 
         <div className="hero-stage" aria-label="ARTIZ showreel">
           <figure className="hero-poster hero-poster-left" aria-hidden="true">
-            <img src="/assets/gallery-2.png" alt="" decoding="async" />
+            <img src="/assets/gallery-2.jpg" alt="" decoding="async" />
           </figure>
-          <div className="stage-glass">
+          <div className={`stage-glass is-${activeWork.orientation}`}>
             <VideoPanel
               activeWork={activeWork}
               isPlaying={isPlaying}
               setIsPlaying={setIsPlaying}
               progress={progress}
+              currentTime={currentTime}
+              duration={duration}
               videoRef={videoRef}
             />
             <ThumbRail activeId={activeId} setActiveId={setActiveId} />
@@ -240,12 +293,12 @@ export function App() {
             </div>
           </div>
           <article className="live-note">
-            <span>Live motion preview</span>
+            <span>Seçilmiş preview</span>
             <strong>{activeWork.title}</strong>
             <p>{activeWork.description}</p>
           </article>
           <figure className="hero-poster hero-poster-right" aria-hidden="true">
-            <img src="/assets/gallery-6.png" alt="" decoding="async" />
+            <img src="/assets/gallery-6.jpg" alt="" decoding="async" />
           </figure>
         </div>
 
@@ -258,7 +311,6 @@ export function App() {
       <section className="works-section scroll-scene" id="works" data-scroll-scene>
         <div className="section-heading assemble-heading">
           <div>
-            <p className="section-kicker">Seçilmiş işlər</p>
             <h2>Hər kadr brendin ritminə uyğun.</h2>
           </div>
           <a href="#contact">
@@ -268,29 +320,14 @@ export function App() {
 
         <div className="work-grid">
           {works.map((work, index) => (
-            <button
-              className={`work-card ${activeId === work.id ? "is-active" : ""}`}
+            <WorkCard
+              activeId={activeId}
+              index={index}
               key={work.id}
-              style={{ "--item-index": index }}
-              type="button"
-              onClick={() => setActiveId(work.id)}
-            >
-              <img
-                src={work.thumb}
-                alt={`${work.shortTitle} video still`}
-                loading="lazy"
-                decoding="async"
-              />
-              <span className="play-badge">
-                <Play size={24} fill="currentColor" />
-              </span>
-              <span className="work-card-copy">
-                <small>{work.number}</small>
-                <strong>{work.shortTitle}</strong>
-                <em>{work.category}</em>
-              </span>
-              <span className="work-duration">{work.duration}</span>
-            </button>
+              setActiveId={setActiveId}
+              setViewerWork={setViewerWork}
+              work={worksWithAspect[index]}
+            />
           ))}
         </div>
       </section>
@@ -374,7 +411,7 @@ export function App() {
         <div className="profile-preview assemble-right" aria-label="Instagram portfolio preview">
           <div className="contact-poster contact-poster-back">
             <img
-              src="/assets/gallery-4.png"
+              src="/assets/gallery-4.jpg"
               alt="ARTIZ campaign visual"
               loading="lazy"
               decoding="async"
@@ -382,13 +419,13 @@ export function App() {
           </div>
           <div className="contact-poster contact-poster-front">
             <img
-              src="/assets/gallery-6.png"
+              src="/assets/gallery-6.jpg"
               alt="ARTIZ brand texture"
               loading="lazy"
               decoding="async"
             />
             <div className="contact-glass-note">
-              <img src="/assets/artiz-logo-mark.png" alt="" />
+              <img src={brandMark} alt="" />
               <div>
                 <strong>ARTIZ.AZ</strong>
                 <span>Ideas in motion</span>
@@ -400,7 +437,7 @@ export function App() {
 
       <footer className="footer">
         <a className="brand" href="#top" aria-label="ARTIZ.AZ home">
-          <img src="/assets/artiz-logo-mark.png" alt="" />
+          <img src={brandMark} alt="" />
           <span>ARTIZ.AZ</span>
         </a>
         <span>© 2026 ARTIZ.AZ. Bütün hüquqlar qorunur.</span>
@@ -410,15 +447,28 @@ export function App() {
           <Play size={20} />
         </div>
       </footer>
-    </main>
+
+      <nav className="mobile-action-bar" aria-label="Mobile contact shortcuts">
+        <a href="#works">Portfolio</a>
+        <a href="https://instagram.com/artiz.az">Instagram</a>
+      </nav>
+
+        {viewerWork ? (
+          <VideoLightbox work={viewerWork} onClose={() => setViewerWork(null)} />
+        ) : null}
+      </main>
+    </>
   );
 }
 
 function Header({ theme, setTheme }) {
   return (
     <header className="header">
+      <div className="header-progress" aria-hidden="true">
+        <span />
+      </div>
       <a className="brand" href="#top" aria-label="ARTIZ.AZ home">
-        <img src="/assets/artiz-logo-mark.png" alt="" />
+        <img src={brandMark} alt="" />
         <span>ARTIZ.AZ</span>
       </a>
       <nav aria-label="Main navigation">
@@ -441,13 +491,38 @@ function Header({ theme, setTheme }) {
           DM ilə danış <ArrowRight size={17} />
         </a>
       </div>
+      <div className="mobile-quick-nav" aria-label="Mobile quick navigation">
+        <a href="#works">İşlər</a>
+        <a href="#services">Xidmətlər</a>
+        <a href="#contact">Əlaqə</a>
+      </div>
     </header>
   );
 }
 
-function VideoPanel({ activeWork, isPlaying, setIsPlaying, progress, videoRef }) {
+function VideoPanel({
+  activeWork,
+  currentTime,
+  duration,
+  isPlaying,
+  setIsPlaying,
+  progress,
+  videoRef,
+}) {
+  const seek = (event) => {
+    const video = videoRef.current;
+    if (!video?.duration) return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+    video.currentTime = ratio * video.duration;
+  };
+
   return (
-    <article className="video-panel">
+    <article
+      className={`video-panel is-${activeWork.orientation}`}
+      style={{ "--media-aspect": activeWork.aspectRatio }}
+    >
       <video
         ref={videoRef}
         key={activeWork.id}
@@ -458,6 +533,7 @@ function VideoPanel({ activeWork, isPlaying, setIsPlaying, progress, videoRef })
         muted
         loop
         playsInline
+        onClick={() => setIsPlaying((current) => !current)}
       />
       <div className="video-shade" />
       <div className="video-title">
@@ -476,13 +552,225 @@ function VideoPanel({ activeWork, isPlaying, setIsPlaying, progress, videoRef })
             <Play size={16} fill="currentColor" />
           )}
         </button>
-        <span>00:02 / {activeWork.duration}</span>
-        <div className="progress-track">
+        <span>
+          {formatTime(currentTime)} / {duration ? formatTime(duration) : activeWork.duration}
+        </span>
+        <button
+          className="progress-track"
+          type="button"
+          onClick={seek}
+          aria-label={`${activeWork.shortTitle} video vaxtını dəyiş`}
+        >
           <span style={{ width: `${Math.max(progress, 14)}%` }} />
-        </div>
+        </button>
       </div>
     </article>
   );
+}
+
+function WorkCard({ activeId, index, setActiveId, setViewerWork, work }) {
+  return (
+    <button
+      className={`work-card is-${work.orientation} ${
+        activeId === work.id ? "is-active" : ""
+      }`}
+      style={{
+        "--item-index": index,
+        "--media-aspect": work.aspectRatio,
+      }}
+      type="button"
+      onClick={() => {
+        setActiveId(work.id);
+        setViewerWork(work);
+      }}
+      aria-label={`${work.shortTitle} videosuna bax`}
+    >
+      <video
+        src={work.video}
+        poster={work.thumb}
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        aria-hidden="true"
+      />
+      <span className="play-badge">
+        <Play size={24} fill="currentColor" />
+      </span>
+      <span className="work-card-copy">
+        <small>{work.number}</small>
+        <strong>{work.shortTitle}</strong>
+        <em>{work.category}</em>
+      </span>
+      <span className="work-duration">{work.duration}</span>
+    </button>
+  );
+}
+
+function VideoLightbox({ onClose, work }) {
+  const lightboxVideoRef = useRef(null);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    document.body.classList.add("is-viewer-open");
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.classList.remove("is-viewer-open");
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
+  useEffect(() => {
+    const video = lightboxVideoRef.current;
+    if (!video) return;
+
+    video.currentTime = 0;
+    video.play().catch(() => {
+      // Native controls remain visible if the browser blocks autoplay.
+    });
+  }, [work.id]);
+
+  return (
+    <div className="video-lightbox" role="dialog" aria-modal="true" aria-label={work.title}>
+      <button className="lightbox-backdrop" type="button" onClick={onClose} aria-label="Bağla" />
+      <article
+        className={`lightbox-player is-${work.orientation}`}
+        style={{ "--media-aspect": work.aspectRatio }}
+      >
+        <div className="lightbox-topline">
+          <div>
+            <span>{work.category}</span>
+            <strong>{work.title}</strong>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Video player-i bağla">
+            <X size={22} />
+          </button>
+        </div>
+        <video
+          ref={lightboxVideoRef}
+          key={work.id}
+          src={work.video}
+          poster={work.thumb}
+          controls
+          autoPlay
+          muted
+          playsInline
+          preload="auto"
+        />
+        <div className="lightbox-meta">
+          <span>{work.format}</span>
+          <span>{work.width}x{work.height}</span>
+          <span>{work.duration}</span>
+        </div>
+      </article>
+    </div>
+  );
+}
+
+function SiteLoader({ progress }) {
+  const safeProgress = Math.min(100, Math.max(0, Math.round(progress)));
+
+  return (
+    <div className="site-loader" role="status" aria-live="polite">
+      <div className="loader-panel">
+        <div className="loader-brand">
+          <img src={brandMark} alt="" />
+          <span>ARTIZ.AZ</span>
+        </div>
+        <strong>{safeProgress}%</strong>
+        <div className="loader-track" aria-hidden="true">
+          <span style={{ transform: `scaleX(${safeProgress / 100})` }} />
+        </div>
+        <p>Motion preview yüklənir</p>
+      </div>
+    </div>
+  );
+}
+
+function useAssetPreloader(assets) {
+  const [progress, setProgress] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const uniqueAssets = [...new Set(assets)];
+    const startedAt = window.performance.now();
+    const minimumDuration = 700;
+
+    if (!uniqueAssets.length) {
+      setProgress(100);
+      setIsLoaded(true);
+      return undefined;
+    }
+
+    let completed = 0;
+    const loadedBytes = new Map();
+    const totalBytes = new Map();
+
+    const updateProgress = () => {
+      if (cancelled) return;
+
+      const total = [...totalBytes.values()].reduce((sum, value) => sum + value, 0);
+      const loaded = [...loadedBytes.values()].reduce((sum, value) => sum + value, 0);
+      const fileProgress = (completed / uniqueAssets.length) * 100;
+      const byteProgress = total > 0 ? (loaded / total) * 100 : fileProgress;
+      const nextProgress = Math.max(fileProgress, byteProgress * 0.92);
+      setProgress(Math.min(99, Math.round(nextProgress)));
+    };
+
+    const preloadAsset = async (url) => {
+      try {
+        const response = await fetch(url, { cache: "force-cache" });
+        if (!response.ok) throw new Error(`Could not load ${url}`);
+
+        const length = Number(response.headers.get("content-length"));
+        if (!response.body || !Number.isFinite(length) || length <= 0) {
+          await response.blob();
+          totalBytes.set(url, 1);
+          loadedBytes.set(url, 1);
+          return;
+        }
+
+        totalBytes.set(url, length);
+        const reader = response.body.getReader();
+        let received = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          received += value.byteLength;
+          loadedBytes.set(url, received);
+          updateProgress();
+        }
+      } catch {
+        totalBytes.set(url, 1);
+        loadedBytes.set(url, 1);
+      } finally {
+        completed += 1;
+        updateProgress();
+      }
+    };
+
+    Promise.all(uniqueAssets.map((asset) => preloadAsset(asset))).then(() => {
+      const elapsed = window.performance.now() - startedAt;
+      window.setTimeout(() => {
+        if (cancelled) return;
+        setProgress(100);
+        window.setTimeout(() => {
+          if (!cancelled) setIsLoaded(true);
+        }, 160);
+      }, Math.max(0, minimumDuration - elapsed));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [assets]);
+
+  return { isLoaded, progress };
 }
 
 function ThumbRail({ activeId, setActiveId }) {
@@ -503,11 +791,20 @@ function ThumbRail({ activeId, setActiveId }) {
   );
 }
 
+function formatTime(value) {
+  if (!Number.isFinite(value)) return "00:00";
+
+  const minutes = Math.floor(value / 60);
+  const seconds = Math.floor(value % 60);
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
 function useScrollScenes() {
   useEffect(() => {
     const scenes = Array.from(document.querySelectorAll("[data-scroll-scene]"));
     const hero = document.querySelector(".hero");
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const root = document.documentElement;
 
     if (reduceMotion) {
       scenes.forEach((scene) => {
@@ -515,6 +812,7 @@ function useScrollScenes() {
         scene.style.setProperty("--scene-rest", "0");
       });
       hero?.style.setProperty("--hero-scroll", "0");
+      root.style.setProperty("--page-progress", "0");
       return undefined;
     }
 
@@ -524,6 +822,9 @@ function useScrollScenes() {
 
     const update = () => {
       const viewport = window.innerHeight || 1;
+      const scrollable = Math.max(root.scrollHeight - viewport, 1);
+      const pageProgress = clamp(window.scrollY / scrollable);
+      root.style.setProperty("--page-progress", pageProgress.toFixed(4));
 
       scenes.forEach((scene) => {
         const rect = scene.getBoundingClientRect();
