@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.npm-cache/
+.codex-artifacts/
+.vercel/
+.DS_Store
+*.log
