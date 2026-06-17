@@ -17,8 +17,24 @@ const brandMark = "/assets/artiz-logo-mark-small.png";
 
 const works = [
   {
-    id: "lamp",
+    id: "paper-bags",
     number: "01",
+    title: "Kraft paketlər reklam videosu",
+    shortTitle: "Paper Bags",
+    category: "3D Product Animation",
+    description: "paperbags.az üçün təbii, davamlı və premium kraft paket təqdimatı",
+    client: "paperbags.az",
+    format: "9:16 Reels",
+    tools: "3D scene / Edit / Motion",
+    thumb: "/assets/work-artiz-new.jpg",
+    video: "/media/artiz-new-showreel.mp4",
+    duration: "00:20",
+    width: 1080,
+    height: 1920,
+  },
+  {
+    id: "lamp",
+    number: "02",
     title: "Ağıllı işıqlandırma",
     shortTitle: "Masa lampası",
     category: "3D Product Animation",
@@ -34,7 +50,7 @@ const works = [
   },
   {
     id: "keyboard",
-    number: "02",
+    number: "03",
     title: "Minimal klaviatura",
     shortTitle: "Minimal setup",
     category: "Reklam Videosu",
@@ -50,7 +66,7 @@ const works = [
   },
   {
     id: "kraft",
-    number: "03",
+    number: "04",
     title: "Qablaşdırma buradan başlayır",
     shortTitle: "Kraft paket",
     category: "Social Media Videosu",
@@ -66,7 +82,7 @@ const works = [
   },
   {
     id: "coffee",
-    number: "04",
+    number: "05",
     title: "Coffee reklam videosu",
     shortTitle: "Coffee promo",
     category: "Reels Content",
@@ -149,9 +165,27 @@ const galleryImages = [
   },
 ];
 
+const heroProcess = [
+  {
+    label: "Brief",
+    title: "Məhsul və mesaj",
+    detail: "Məqsəd, auditoriya və əsas səhnə tonu dəqiqləşir.",
+  },
+  {
+    label: "Scene",
+    title: "3D səhnə",
+    detail: "Material, işıq, kamera və məhsul kompozisiyası qurulur.",
+  },
+  {
+    label: "Motion",
+    title: "Reels cut",
+    detail: "9:16 format, ritm, yazılar və final export hazırlanır.",
+  },
+];
+
 export function App() {
   const [theme, setTheme] = useState("light");
-  const [activeId, setActiveId] = useState("coffee");
+  const [activeId, setActiveId] = useState("paper-bags");
   const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -222,6 +256,7 @@ export function App() {
   return (
     <>
       {!isLoaded ? <SiteLoader progress={loadProgress} /> : null}
+      <CustomCursor />
       <main
         className={`site-shell ${isLoaded ? "is-site-ready" : "is-site-loading"}`}
         aria-hidden={!isLoaded ? "true" : undefined}
@@ -268,6 +303,29 @@ export function App() {
               <strong>3D</strong>
               Product
             </span>
+          </div>
+          <div className="hero-process" aria-label="ARTIZ production process">
+            <div className="hero-process-bg" aria-hidden="true">
+              <img className="process-float-card process-card-one" src="/assets/work-kraft.jpg" alt="" decoding="async" />
+              <img className="process-float-card process-card-two" src="/assets/work-coffee.jpg" alt="" decoding="async" />
+              <img className="process-float-card process-card-three" src="/assets/gallery-3.jpg" alt="" decoding="async" />
+            </div>
+            <div className="hero-process-head">
+              <span>Proses</span>
+              <strong>Brief-dən hazır reklama</strong>
+            </div>
+            <div className="hero-process-steps">
+              {heroProcess.map((step, index) => (
+                <article key={step.label}>
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <div>
+                    <small>{step.label}</small>
+                    <strong>{step.title}</strong>
+                    <p>{step.detail}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -458,6 +516,77 @@ export function App() {
         ) : null}
       </main>
     </>
+  );
+}
+
+function CustomCursor() {
+  const [cursor, setCursor] = useState({
+    isActive: false,
+    label: "",
+    isPressed: false,
+    isVisible: false,
+    x: -80,
+    y: -80,
+  });
+
+  useEffect(() => {
+    const finePointer = window.matchMedia("(pointer: fine)").matches;
+    if (!finePointer) return undefined;
+
+    const interactiveSelector = "a, button, video, [role='button']";
+
+    const updateCursor = (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const interactiveTarget = target?.closest(interactiveSelector);
+      const isVideoTarget = Boolean(target?.closest("video, .work-card, .video-panel"));
+      setCursor((current) => ({
+        ...current,
+        isActive: Boolean(interactiveTarget),
+        isVisible: true,
+        label: interactiveTarget ? (isVideoTarget ? "PLAY" : "OPEN") : "",
+        x: event.clientX,
+        y: event.clientY,
+      }));
+    };
+
+    const pressCursor = () => {
+      setCursor((current) => ({ ...current, isPressed: true }));
+    };
+
+    const releaseCursor = () => {
+      setCursor((current) => ({ ...current, isPressed: false }));
+    };
+
+    const hideCursor = () => {
+      setCursor((current) => ({ ...current, isVisible: false }));
+    };
+
+    window.addEventListener("mousemove", updateCursor);
+    window.addEventListener("mousedown", pressCursor);
+    window.addEventListener("mouseup", releaseCursor);
+    window.addEventListener("mouseleave", hideCursor);
+
+    return () => {
+      window.removeEventListener("mousemove", updateCursor);
+      window.removeEventListener("mousedown", pressCursor);
+      window.removeEventListener("mouseup", releaseCursor);
+      window.removeEventListener("mouseleave", hideCursor);
+    };
+  }, []);
+
+  return (
+    <div
+      className={`custom-cursor ${cursor.isVisible ? "is-visible" : ""} ${
+        cursor.isActive ? "is-active" : ""
+      } ${cursor.isPressed ? "is-pressed" : ""}`}
+      style={{ "--cursor-x": `${cursor.x}px`, "--cursor-y": `${cursor.y}px` }}
+      aria-hidden="true"
+    >
+      <span className="custom-cursor-ring" />
+      <span className="custom-cursor-orbit" />
+      <span className="custom-cursor-dot" />
+      <span className="custom-cursor-label">{cursor.label}</span>
+    </div>
   );
 }
 
